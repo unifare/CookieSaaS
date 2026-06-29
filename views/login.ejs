@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Login - CookieSaaS</title>
+  <link rel="stylesheet" href="https://unpkg.com/reset-css/reset.css">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Arial, sans-serif;
+      background: #f5f5f7;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .auth-card {
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: saturate(180%) blur(20px);
+      border-radius: 18px;
+      padding: 40px;
+      width: 100%;
+      max-width: 360px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.04);
+      border: 1px solid rgba(0,0,0,0.02);
+      text-align: center;
+    }
+    .title {
+      font-size: 24px;
+      font-weight: 600;
+      color: #1d1d1f;
+      margin-bottom: 24px;
+    }
+    .input-field {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 16px;
+      border: 1px solid rgba(0,0,0,0.1);
+      border-radius: 8px;
+      box-sizing: border-box;
+      font-size: 15px;
+    }
+    .btn {
+      width: 100%;
+      padding: 12px;
+      background: #C8A97E;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn:hover {
+      background: #b59871;
+    }
+    .toggle {
+      margin-top: 16px;
+      color: #C8A97E;
+      cursor: pointer;
+      font-size: 14px;
+    }
+  </style>
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+</head>
+<body>
+  <div class="auth-card">
+    <div class="title" id="authTitle">Sign In</div>
+    <form id="authForm" onsubmit="handleSubmit(event)">
+      <input class="input-field" type="text" id="username" placeholder="Username" required />
+      <input class="input-field" type="password" id="password" placeholder="Password" required />
+      <button class="btn" type="submit" id="submitBtn">Login</button>
+    </form>
+    <div class="toggle" onclick="toggleMode()" id="toggleBtn">Need an account? Register</div>
+  </div>
+
+  <script>
+    let isRegister = false;
+    function toggleMode() {
+      isRegister = !isRegister;
+      document.getElementById('authTitle').innerText = isRegister ? 'Register' : 'Sign In';
+      document.getElementById('submitBtn').innerText = isRegister ? 'Create Account' : 'Login';
+      document.getElementById('toggleBtn').innerText = isRegister ? 'Already have an account? Login' : 'Need an account? Register';
+    }
+
+    async function handleSubmit(e) {
+      e.preventDefault();
+      const u = document.getElementById('username').value;
+      const p = document.getElementById('password').value;
+      const endpoint = isRegister ? '/api/auth/register' : '/api/auth/login';
+      try {
+        await axios.post(endpoint, { username: u, password: p });
+        window.location.href = '/dashboard';
+      } catch (err) {
+        alert(err.response?.data?.error || 'Authentication failed');
+      }
+    }
+  </script>
+</body>
+</html>

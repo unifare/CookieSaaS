@@ -1,0 +1,84 @@
+<%- include('header') %>
+
+<% 
+  let totalCookies = 0;
+  stats.forEach(s => totalCookies += s.count);
+%>
+
+<!-- Hero Section -->
+<div style="background: linear-gradient(135deg, #1d1d1f 0%, #434353 100%); border-radius: 18px; padding: 48px; color: white; margin-bottom: 32px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 16px; position: relative; overflow: hidden;">
+  <i data-lucide="cookie" style="position: absolute; right: -20px; top: -20px; width: 200px; height: 200px; color: rgba(255,255,255,0.05);"></i>
+  
+  <h1 style="margin: 0; font-size: 32px; font-weight: 700; letter-spacing: -0.5px;">Welcome back, <%= user.username %>!</h1>
+  <p style="margin: 0; font-size: 16px; color: rgba(255,255,255,0.8); max-width: 500px; line-height: 1.5;">
+    Manage your automated cookie sessions across multiple domains seamlessly. Your SaaS instance is running optimally.
+  </p>
+  
+  <div style="display: flex; gap: 16px; margin-top: 16px;">
+    <a href="/cookies" class="btn" style="background: #C8A97E; color: white; border: none; padding: 10px 24px; font-size: 15px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+      <i data-lucide="folder-open" style="width: 16px; height: 16px;"></i> Open Cookie Manager
+    </a>
+    <a href="/profile" class="btn" style="background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); padding: 10px 24px; font-size: 15px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+      <i data-lucide="key" style="width: 16px; height: 16px;"></i> Get API Token
+    </a>
+  </div>
+</div>
+
+<!-- Stats Overview -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 24px; margin-bottom: 32px;">
+  <div class="card" style="padding: 24px; display: flex; align-items: center; gap: 16px;">
+    <div style="background: rgba(200, 169, 126, 0.15); color: #C8A97E; padding: 16px; border-radius: 14px;">
+      <i data-lucide="globe" style="width: 28px; height: 28px;"></i>
+    </div>
+    <div>
+      <div style="color: #86868b; font-size: 14px; font-weight: 500; margin-bottom: 4px;">Active Domains</div>
+      <div style="font-size: 28px; font-weight: 700; color: #1d1d1f;"><%= stats.length %></div>
+    </div>
+  </div>
+  
+  <div class="card" style="padding: 24px; display: flex; align-items: center; gap: 16px;">
+    <div style="background: rgba(99, 102, 241, 0.15); color: #6366f1; padding: 16px; border-radius: 14px;">
+      <i data-lucide="database" style="width: 28px; height: 28px;"></i>
+    </div>
+    <div>
+      <div style="color: #86868b; font-size: 14px; font-weight: 500; margin-bottom: 4px;">Total Cookies</div>
+      <div style="font-size: 28px; font-weight: 700; color: #1d1d1f;"><%= totalCookies %></div>
+    </div>
+  </div>
+</div>
+
+<!-- Domain Grid -->
+<h3 style="margin-top: 0; margin-bottom: 24px; font-size: 20px;">Top Domains</h3>
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px;">
+  <% if (stats.length === 0) { %>
+    <div style="grid-column: 1 / -1; text-align: center; padding: 64px; color: #86868b; background: white; border-radius: 18px; border: 1px dashed rgba(0,0,0,0.1);">
+      <i data-lucide="inbox" style="width: 48px; height: 48px; margin-bottom: 16px; color: #d2d2d7;"></i>
+      <div>No cookies found. Head over to the Cookie Manager to import some!</div>
+    </div>
+  <% } else { %>
+    <% stats.forEach(stat => { %>
+      <a href="/cookies?search=&domain=<%= encodeURIComponent(stat.domain) %>" style="text-decoration: none; color: inherit;">
+        <div class="card" style="padding: 24px; display: flex; flex-direction: column; transition: transform 0.2s, box-shadow 0.2s; cursor: pointer;" 
+             onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 12px 32px rgba(0,0,0,0.08)';" 
+             onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 24px rgba(0,0,0,0.04)';">
+          
+          <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+            <div style="background: #fbfbfd; border: 1px solid rgba(0,0,0,0.06); padding: 10px; border-radius: 12px;">
+              <i data-lucide="server" style="width: 20px; height: 20px; color: #86868b;"></i>
+            </div>
+            <h3 style="margin: 0; font-size: 16px; word-break: break-all; flex: 1; font-weight: 600; color: #1d1d1f;"><%= stat.domain %></h3>
+          </div>
+          
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <span style="color: #86868b; font-size: 14px; font-weight: 500;">Stored Sessions</span>
+            <span style="background: rgba(200, 169, 126, 0.15); color: #C8A97E; font-weight: 700; padding: 4px 12px; border-radius: 12px; font-size: 14px;">
+              <%= stat.count %>
+            </span>
+          </div>
+        </div>
+      </a>
+    <% }) %>
+  <% } %>
+</div>
+
+<%- include('footer') %>

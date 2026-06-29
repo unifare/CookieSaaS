@@ -1,0 +1,28 @@
+<%- include('header') %>
+
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+  <h3 style="margin: 0;">System Settings</h3>
+</div>
+
+<div class="card" style="display: flex; align-items: center; justify-content: space-between;">
+  <div>
+    <div style="font-weight: 600; font-size: 16px;">Allow New User Registrations</div>
+    <div style="color: #86868b; font-size: 14px;">Toggle whether the public register endpoint is enabled.</div>
+  </div>
+  <button class="btn <%= regEnabled ? '' : 'btn-danger' %>" onclick="toggleReg(<%= !regEnabled %>)">
+    <%= regEnabled ? 'Enabled (Click to Disable)' : 'Disabled (Click to Enable)' %>
+  </button>
+</div>
+
+<script>
+  async function toggleReg(enable) {
+    try {
+      await axios.post('/api/admin/settings/registration', { enabled: enable });
+      window.location.reload();
+    } catch(e) {
+      alert('Failed');
+    }
+  }
+</script>
+
+<%- include('footer') %>

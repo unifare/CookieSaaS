@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CookieSaaS</title>
+  <link rel="stylesheet" href="https://unpkg.com/reset-css/reset.css">
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+  <style>
+    :root {
+      --primary: #C8A97E;
+      --bg: #f5f5f7;
+      --sidebar-bg: #fbfbfd;
+      --text: #1d1d1f;
+      --border: rgba(0,0,0,0.06);
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      min-height: 100vh;
+      margin: 0;
+    }
+    /* Layout */
+    .sider {
+      width: 260px;
+      background: var(--sidebar-bg);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      height: 100vh;
+      z-index: 100;
+    }
+    .sider-header {
+      height: 64px;
+      margin: 16px 24px;
+      display: flex;
+      align-items: center;
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .menu {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      flex: 1;
+    }
+    .menu-item {
+      padding: 12px 24px;
+      margin: 4px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      text-decoration: none;
+      color: var(--text);
+      font-size: 15px;
+      transition: background 0.2s;
+    }
+    .menu-item:hover {
+      background: rgba(0,0,0,0.04);
+    }
+    .menu-item.active {
+      background: #e5e5ea;
+      font-weight: 500;
+    }
+    .main-layout {
+      margin-left: 260px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .header {
+      height: 64px;
+      padding: 0 32px;
+      background: rgba(255, 255, 255, 0.72);
+      backdrop-filter: saturate(180%) blur(20px);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .content {
+      padding: 32px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 18px;
+      padding: 32px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.04);
+      border: 1px solid rgba(0,0,0,0.02);
+    }
+    .btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      background: var(--primary);
+      color: white;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .btn-danger {
+      background: transparent;
+      color: #ff3b30;
+    }
+    .btn-danger:hover {
+      background: rgba(255, 59, 48, 0.1);
+    }
+    .input-field {
+      width: 100%;
+      padding: 10px 16px;
+      border: 1px solid rgba(0,0,0,0.1);
+      border-radius: 8px;
+      box-sizing: border-box;
+      font-size: 15px;
+      background: #fff;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+      font-family: inherit;
+    }
+    .input-field:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(200, 169, 126, 0.2);
+    }
+    /* Mobile responsive */
+    @media (max-width: 768px) {
+      .sider { 
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+        box-shadow: 4px 0 24px rgba(0,0,0,0.1);
+      }
+      .sider.open { 
+        transform: translateX(0); 
+      }
+      .main-layout { margin-left: 0; }
+      .content { padding: 16px; }
+      .card { padding: 16px; }
+      .header { padding: 0 16px; }
+      .hide-mobile { display: none !important; }
+      .menu-toggle { display: block !important; }
+    }
+    .menu-toggle {
+      display: none;
+      font-size: 24px;
+      cursor: pointer;
+      margin-right: 16px;
+      background: none;
+      border: none;
+      color: var(--text);
+    }
+    .overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 90;
+    }
+    .overlay.open {
+      display: block;
+    }
+  </style>
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  
+  <div class="overlay" id="mobileOverlay" onclick="toggleMenu()"></div>
+
+  <aside class="sider" id="siderMenu">
+    <div class="sider-header">
+      <i data-lucide="cookie" style="color: var(--primary); margin-right: 12px; width: 24px; height: 24px;"></i>
+      CookieSaaS
+    </div>
+    <ul class="menu">
+      <a href="/dashboard" class="menu-item <%= currentPath === '/dashboard' ? 'active' : '' %>">
+        <i data-lucide="layout-dashboard" style="margin-right: 12px; width: 18px; height: 18px;"></i> Dashboard
+      </a>
+      <a href="/cookies" class="menu-item <%= currentPath === '/cookies' ? 'active' : '' %>">
+        <i data-lucide="database" style="margin-right: 12px; width: 18px; height: 18px;"></i> Cookie Manager
+      </a>
+      <% if (user && user.role === 'admin') { %>
+        <a href="/settings" class="menu-item <%= currentPath === '/settings' ? 'active' : '' %>">
+          <i data-lucide="settings" style="margin-right: 12px; width: 18px; height: 18px;"></i> System Settings
+        </a>
+        <a href="/admin" class="menu-item <%= currentPath === '/admin' ? 'active' : '' %>">
+          <i data-lucide="users" style="margin-right: 12px; width: 18px; height: 18px;"></i> User Management
+        </a>
+      <% } %>
+    </ul>
+  </aside>
+
+  <div class="main-layout">
+    <header class="header">
+      <div style="display: flex; align-items: center;">
+        <button class="menu-toggle" onclick="toggleMenu()">
+          <i data-lucide="menu"></i>
+        </button>
+        <h2 style="margin: 0; font-size: 18px; font-weight: 600; letter-spacing: -0.5px;">Cookie Management</h2>
+      </div>
+      <div style="display: flex; align-items: center;">
+        <a href="/profile" class="hide-mobile" style="margin-right: 24px; font-weight: 600; text-decoration: none; color: var(--primary); display: flex; align-items: center; gap: 6px; transition: opacity 0.2s;" onmouseover="this.style.opacity=0.8" onmouseout="this.style.opacity=1">
+          <i data-lucide="circle-user" style="width: 18px; height: 18px;"></i>
+          <%= user.username %>
+        </a>
+        <a href="/logout" class="btn btn-danger" style="padding: 6px 12px;">Logout</a>
+      </div>
+    </header>
+    <main class="content">
+      <div class="card">
+        <script>
+          function toggleMenu() {
+            document.getElementById('siderMenu').classList.toggle('open');
+            document.getElementById('mobileOverlay').classList.toggle('open');
+          }
+        </script>

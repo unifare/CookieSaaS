@@ -1,0 +1,242 @@
+<%- include('header') %>
+
+<!-- Top Bar: Search and Global Import -->
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+  <form action="/cookies" method="GET" style="display: flex; gap: 12px; flex: 1; min-width: 300px; align-items: center;">
+    <input type="text" name="search" class="input-field" placeholder="Search domain, name, value..." value="<%= search %>" style="margin: 0; max-width: 300px;" />
+    
+    <select name="domain" class="input-field" style="margin: 0; max-width: 200px; height: 42px;">
+      <option value="">All Domains</option>
+      <% domains.forEach(d => { %>
+        <option value="<%= d %>" <%= domainFilter === d ? 'selected' : '' %>><%= d %></option>
+      <% }) %>
+    </select>
+    
+    <button type="submit" class="btn" style="height: 42px;">Search</button>
+    <% if (search || domainFilter) { %>
+      <a href="/cookies" class="btn" style="background: #e5e5ea; color: #1d1d1f; display: flex; align-items: center;">Reset</a>
+    <% } %>
+  </form>
+
+  <button class="btn" onclick="document.getElementById('importModal').style.display='flex'">+ Import Cookies</button>
+</div>
+
+<!-- Domain Groups -->
+<% if (domainGroups.length === 0) { %>
+  <div class="card" style="text-align: center; color: #86868b; padding: 48px;">
+    No cookies found.
+  </div>
+<% } else { %>
+  <div style="display: flex; flex-direction: column; gap: 16px;">
+    <% domainGroups.forEach((group, index) => { %>
+      <div class="card" style="padding: 0; overflow: hidden; border-radius: 12px;">
+        
+        <!-- Accordion Header -->
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; background: #fbfbfd; border-bottom: 1px solid rgba(0,0,0,0.06); cursor: pointer;" onclick="toggleAccordion('group-<%= index %>')">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span id="icon-<%= index %>" style="transition: transform 0.2s;">▶</span>
+            <h3 style="margin: 0; font-size: 18px;"><%= group.domain %></h3>
+            <span style="background: rgba(0,0,0,0.06); padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;"><%= group.cookies.length %></span>
+          </div>
+          <div style="display: flex; gap: 8px;" onclick="event.stopPropagation()">
+            <button class="btn" style="padding: 6px 12px; font-size: 13px; background: #e5e5ea; color: #1d1d1f;" onclick="openExportModal('<%= group.domain %>', 'json')">JSON</button>
+            <button class="btn" style="padding: 6px 12px; font-size: 13px; background: #e5e5ea; color: #1d1d1f;" onclick="openExportModal('<%= group.domain %>', 'kv')">Key-Value</button>
+            <button class="btn" style="padding: 6px 12px; font-size: 13px; background: #e5e5ea; color: #1d1d1f;" onclick="openExportModal('<%= group.domain %>', 'curl')">cURL</button>
+            <button class="btn btn-danger" style="padding: 6px 12px; font-size: 13px;" onclick="deleteDomain('<%= group.domain %>')">Clear Site</button>
+          </div>
+        </div>
+
+        <!-- Accordion Body (Table) -->
+        <div id="group-<%= index %>" style="display: none; overflow-x: auto; background: white;">
+          <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;">
+            <thead>
+              <tr style="background: #fff; border-bottom: 1px solid rgba(0,0,0,0.06);">
+                <th style="padding: 12px 24px; font-weight: 600; color: #86868b;">Name</th>
+                <th style="padding: 12px 24px; font-weight: 600; color: #86868b;">Value</th>
+                <th style="padding: 12px 24px; font-weight: 600; color: #86868b;">Path</th>
+                <th style="padding: 12px 24px; font-weight: 600; color: #86868b;">Secure</th>
+                <th style="padding: 12px 24px; font-weight: 600; color: #86868b; text-align: right;">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% group.cookies.forEach(c => { %>
+                <tr style="border-bottom: 1px solid rgba(0,0,0,0.04);">
+                  <td style="padding: 12px 24px; font-weight: 500;"><%= c.name %></td>
+                  <td style="padding: 12px 24px; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: monospace;"><%= c.value %></td>
+                  <td style="padding: 12px 24px;"><%= c.path %></td>
+                  <td style="padding: 12px 24px;"><%= c.secure ? 'Yes' : 'No' %></td>
+                  <td style="padding: 12px 24px; text-align: right;">
+                    <button class="btn" style="padding: 4px 8px; font-size: 12px; margin-right: 4px; background: #e5e5ea; color: #1d1d1f;" 
+                            onclick="openEditModal('<%= c.domain %>', '<%= c.name %>', '<%= Buffer.from(c.value).toString('base64') %>', '<%= c.path %>', <%= c.secure ? 'true' : 'false' %>, <%= c.httpOnly ? 'true' : 'false' %>, '<%= c.sameSite %>', <%= c.expires %>)">Edit</button>
+                    <button class="btn btn-danger" style="padding: 4px 8px; font-size: 12px;" onclick="deleteCookie('<%= c.domain %>', '<%= c.name %>')">Delete</button>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    <% }) %>
+  </div>
+<% } %>
+
+<!-- Import Modal -->
+<div id="importModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 1000; align-items: center; justify-content: center; padding: 16px;">
+  <div class="card" style="width: 100%; max-width: 500px; margin: auto;">
+    <h3 style="margin-top: 0;">Import Cookies (JSON array)</h3>
+    <textarea id="importJson" class="input-field" rows="8" style="width: 100%; box-sizing: border-box; max-width: 100%; font-family: monospace;"></textarea>
+    <div style="display: flex; justify-content: flex-end; gap: 12px;">
+      <button class="btn" style="background: #e5e5ea; color: #1d1d1f;" onclick="document.getElementById('importModal').style.display='none'">Cancel</button>
+      <button class="btn" onclick="submitImport()">Import</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div id="editModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 1000; align-items: center; justify-content: center; padding: 16px;">
+  <div class="card" style="width: 100%; max-width: 500px; margin: auto; max-height: 80vh; overflow-y: auto;">
+    <h3 style="margin-top: 0;">Edit Cookie</h3>
+    <input type="hidden" id="editOldDomain" />
+    <input type="hidden" id="editOldName" />
+    <input class="input-field" id="editDomain" placeholder="Domain" />
+    <input class="input-field" id="editName" placeholder="Name" />
+    <textarea class="input-field" id="editValue" placeholder="Value" rows="4" style="width: 100%; box-sizing: border-box; max-width: 100%;"></textarea>
+    <input class="input-field" id="editPath" placeholder="Path" />
+    <input class="input-field" id="editSameSite" placeholder="SameSite" />
+    <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;"><input type="checkbox" id="editSecure" /> Secure</label>
+    <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;"><input type="checkbox" id="editHttpOnly" /> HttpOnly</label>
+    <div style="display: flex; justify-content: flex-end; gap: 12px;">
+      <button class="btn" style="background: #e5e5ea; color: #1d1d1f;" onclick="document.getElementById('editModal').style.display='none'">Cancel</button>
+      <button class="btn" onclick="submitEdit()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Export Modal -->
+<div id="exportModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 1000; align-items: center; justify-content: center; padding: 16px;">
+  <div class="card" style="width: 100%; max-width: 700px; margin: auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h3 style="margin: 0;" id="exportTitle">Export</h3>
+      <button class="btn" onclick="copyExport()">Copy</button>
+    </div>
+    <textarea id="exportContent" class="input-field" rows="12" style="width: 100%; box-sizing: border-box; max-width: 100%; font-family: monospace;" readonly></textarea>
+    <div style="display: flex; justify-content: flex-end;">
+      <button class="btn" style="background: #e5e5ea; color: #1d1d1f;" onclick="document.getElementById('exportModal').style.display='none'">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  function toggleAccordion(id) {
+    const el = document.getElementById(id);
+    const icon = document.getElementById(id.replace('group', 'icon'));
+    if (el.style.display === 'none') {
+      el.style.display = 'block';
+      icon.style.transform = 'rotate(90deg)';
+    } else {
+      el.style.display = 'none';
+      icon.style.transform = 'rotate(0deg)';
+    }
+  }
+
+  function openEditModal(domain, name, b64val, path, secure, httpOnly, sameSite, expires) {
+    document.getElementById('editOldDomain').value = domain;
+    document.getElementById('editOldName').value = name;
+    document.getElementById('editDomain').value = domain;
+    document.getElementById('editName').value = name;
+    document.getElementById('editValue').value = decodeURIComponent(escape(atob(b64val)));
+    document.getElementById('editPath').value = path;
+    document.getElementById('editSecure').checked = secure;
+    document.getElementById('editHttpOnly').checked = httpOnly;
+    document.getElementById('editSameSite').value = sameSite || 'Lax';
+    document.getElementById('editModal').style.display = 'flex';
+  }
+
+  async function submitEdit() {
+    const oldDomain = document.getElementById('editOldDomain').value;
+    const oldName = document.getElementById('editOldName').value;
+    const newDomain = document.getElementById('editDomain').value;
+    const newName = document.getElementById('editName').value;
+    const payload = {
+      domain: newDomain,
+      name: newName,
+      value: document.getElementById('editValue').value,
+      path: document.getElementById('editPath').value,
+      secure: document.getElementById('editSecure').checked,
+      httpOnly: document.getElementById('editHttpOnly').checked,
+      sameSite: document.getElementById('editSameSite').value
+    };
+    try {
+      if (oldDomain !== newDomain || oldName !== newName) {
+        await axios.delete(`/api/cookies/${oldDomain}/${oldName}`);
+      }
+      await axios.post('/api/cookies/import', [payload]);
+      window.location.reload();
+    } catch(e) {
+      alert('Failed to save');
+    }
+  }
+
+  async function openExportModal(domain, format) {
+    try {
+      const res = await axios.get(`/api/cookies/export?domain=${domain}`);
+      const cookies = res.data;
+      let text = '';
+      if (format === 'json') {
+        text = JSON.stringify(cookies, null, 2);
+        document.getElementById('exportTitle').innerText = `JSON Export (${domain})`;
+      } else if (format === 'kv') {
+        text = cookies.map(c => `${c.name}=${c.value}`).join('; ');
+        document.getElementById('exportTitle').innerText = `Key-Value Export (${domain})`;
+      } else if (format === 'curl') {
+        const kv = cookies.map(c => `${c.name}=${c.value}`).join('; ');
+        text = `curl -H "Cookie: ${kv}" "https://${domain}"`;
+        document.getElementById('exportTitle').innerText = `cURL Export (${domain})`;
+      }
+      document.getElementById('exportContent').value = text;
+      document.getElementById('exportModal').style.display = 'flex';
+    } catch(e) {
+      alert('Failed to fetch cookies for export');
+    }
+  }
+
+  function copyExport() {
+    const el = document.getElementById('exportContent');
+    el.select();
+    document.execCommand('copy');
+    alert('Copied to clipboard');
+  }
+
+  async function deleteCookie(domain, name) {
+    if(!confirm(`Delete cookie ${name}?`)) return;
+    try {
+      await axios.delete(`/api/cookies/${domain}/${name}`);
+      window.location.reload();
+    } catch(e) {
+      alert('Failed to delete');
+    }
+  }
+
+  async function deleteDomain(domain) {
+    if(!confirm(`Are you sure you want to delete ALL cookies for ${domain}?`)) return;
+    try {
+      await axios.delete(`/api/cookies/${domain}`);
+      window.location.reload();
+    } catch(e) {
+      alert('Failed to delete domain cookies');
+    }
+  }
+
+  async function submitImport() {
+    try {
+      const data = JSON.parse(document.getElementById('importJson').value);
+      await axios.post('/api/cookies/import', data);
+      window.location.reload();
+    } catch(e) {
+      alert('Invalid JSON or import failed');
+    }
+  }
+</script>
+
+<%- include('footer') %>

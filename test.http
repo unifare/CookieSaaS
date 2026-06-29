@@ -1,0 +1,49 @@
+### API Base URL
+@baseUrl = http://localhost:28472/api
+@token = admin123
+
+### 1. Login (Optional, just to verify password)
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+  "password": "admin123"
+}
+
+### 2. Import some test cookies
+POST {{baseUrl}}/cookies/import
+Authorization: {{token}}
+Content-Type: application/json
+
+[
+  {
+    "name": "session_id",
+    "value": "123456789",
+    "domain": "example.com",
+    "path": "/",
+    "expires": 1700000000,
+    "httpOnly": true,
+    "secure": true,
+    "sameSite": "Lax"
+  }
+]
+
+### 3. List all domains with cookie counts
+GET {{baseUrl}}/cookies
+Authorization: {{token}}
+
+### 4. Export all cookies
+GET {{baseUrl}}/cookies/export
+Authorization: {{token}}
+
+### 5. Export cookies for a specific domain search (LIKE query)
+GET {{baseUrl}}/cookies/export?domain=example
+Authorization: {{token}}
+
+### 6. Get cookies for exact domain
+GET {{baseUrl}}/cookies/example.com
+Authorization: {{token}}
+
+### 7. Delete cookies for a specific domain
+DELETE {{baseUrl}}/cookies/test.com
+Authorization: {{token}}

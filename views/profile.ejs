@@ -1,0 +1,84 @@
+<%- include('header') %>
+
+<h3 style="margin-top: 0;">API Token</h3>
+<p style="color: #86868b; margin-bottom: 8px;">Use this token to authenticate API requests.</p>
+<div style="display: flex; gap: 12px; margin-bottom: 24px;">
+  <input type="text" class="input-field" value="<%= user.api_token %>" readonly style="margin: 0; background: #fbfbfd; flex: 1;" id="tokenInput" />
+  <button class="btn" onclick="copyToken()">Copy</button>
+  <button class="btn btn-danger" onclick="rotateToken()">Rotate Token</button>
+</div>
+
+<div class="card" style="margin-top: 32px; padding: 24px;">
+  <h3 style="margin-top: 0; margin-bottom: 16px;">API Usage Guide</h3>
+  <p style="color: #86868b; font-size: 14px; margin-bottom: 16px;">
+    Include your API token in the HTTP Authorization header as a Bearer token: <br/>
+    <code style="background: #f5f5f7; padding: 2px 6px; border-radius: 4px;">Authorization: Bearer YOUR_API_TOKEN</code>
+  </p>
+
+  <h4 style="font-size: 15px; margin-bottom: 8px;">1. Import Cookies</h4>
+  <pre style="background: #fbfbfd; padding: 12px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.06); font-family: monospace; font-size: 13px; overflow-x: auto;">
+curl -X POST http://localhost:28472/api/cookies/import \
+  -H "Authorization: Bearer <%= user.api_token %>" \
+  -H "Content-Type: application/json" \
+  -d '[{"domain": ".example.com", "name": "session", "value": "xyz", "path": "/"}]'</pre>
+
+  <h4 style="font-size: 15px; margin-bottom: 8px; margin-top: 16px;">2. Export Cookies by Domain</h4>
+  <pre style="background: #fbfbfd; padding: 12px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.06); font-family: monospace; font-size: 13px; overflow-x: auto;">
+curl -X GET "http://localhost:28472/api/cookies/export?domain=.example.com" \
+  -H "Authorization: Bearer <%= user.api_token %>"</pre>
+  
+  <h4 style="font-size: 15px; margin-bottom: 8px; margin-top: 16px;">3. Export ALL Cookies</h4>
+  <pre style="background: #fbfbfd; padding: 12px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.06); font-family: monospace; font-size: 13px; overflow-x: auto;">
+curl -X GET "http://localhost:28472/api/cookies/export" \
+  -H "Authorization: Bearer <%= user.api_token %>"</pre>
+</div>
+
+<div class="card" style="margin-top: 32px; padding: 24px;">
+  <h3 style="margin-top: 0; margin-bottom: 16px;">Change Password</h3>
+  <div style="display: flex; flex-direction: column; gap: 12px; max-width: 400px;">
+    <input type="password" id="oldPwd" class="input-field" placeholder="Current Password" style="margin: 0;" />
+    <input type="password" id="newPwd" class="input-field" placeholder="New Password" style="margin: 0;" />
+    <input type="password" id="confirmPwd" class="input-field" placeholder="Confirm New Password" style="margin: 0;" />
+    <button class="btn" style="align-self: flex-start; margin-top: 8px;" onclick="changePassword()">Update Password</button>
+  </div>
+</div>
+
+<script>
+  async function changePassword() {
+    const oldP = document.getElementById('oldPwd').value;
+    const newP = document.getElementById('newPwd').value;
+    const confP = document.getElementById('confirmPwd').value;
+    
+    if (!oldP || !newP) return alert('Please fill in all fields');
+    if (newP !== confP) return alert('New passwords do not match');
+    
+    try {
+      await axios.post('/api/user/password', { oldPassword: oldP, newPassword: newP });
+      alert('Password updated successfully');
+      document.getElementById('oldPwd').value = '';
+      document.getElementById('newPwd').value = '';
+      document.getElementById('confirmPwd').value = '';
+    } catch (e) {
+      alert(e.response?.data?.error || 'Failed to update password');
+    }
+  }
+
+  function copyToken() {
+    const el = document.getElementById('tokenInput');
+    el.select();
+    document.execCommand('copy');
+    alert('Copied to clipboard');
+  }
+
+  async function rotateToken() {
+    if(!confirm('Are you sure? All existing API clients will be disconnected.')) return;
+    try {
+      await axios.post('/api/user/token/rotate');
+      window.location.reload();
+    } catch (e) {
+      alert('Failed to rotate token');
+    }
+  }
+</script>
+
+<%- include('footer') %>
